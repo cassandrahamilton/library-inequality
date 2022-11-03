@@ -7,3 +7,6 @@ They were geocoded using the [US Census Geocoder](https://geocoding.geo.census.g
 
 ## Demographic Data
 Compiled at the block level.... ___ questions were chosen
+
+### Shapefile
+Took a while to find you you can download shapefiles [here](https://www.census.gov/cgi-bin/geo/shapefiles/index.php)
