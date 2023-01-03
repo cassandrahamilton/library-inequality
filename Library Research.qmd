@@ -1,0 +1,191 @@
+---
+title: "Neighborhood demographics and distance from a library"
+subtitle: "A look into the distribution of libraries in Minneapolis"
+author: "Cassandra Hamilton"
+format: 
+  html:
+      code-overflow: wrap
+      self-contained: true
+      warning: false
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| warning: false
+library(tidyverse)
+```
+
+# Cleaning Population Data
+
+## Race- US Decennial Census
+
+At the block level. Race is quantified by "percent not white" - - in papers this is later called POC
+
+```{r}
+##### Initial prep #####
+#skips row with long, easy to understand question
+race_df = read.csv("DECENNIALPL2020.P1_2022-11-29T164332\\DECENNIALPL2020.P1-Data.csv",header=T)[-1,]
+
+# remove annotation columns
+race_df <- race_df %>%
+  select(-contains("NA")) 
+
+# change from character to numeric
+race_df[ , 2:72] <- apply(race_df[ , 2:72], 2,
+                    function(x) as.numeric(as.character(x)))
+
+
+######## combining columns based on race ########
+race_df <- race_df %>%
+  mutate("nonWhite" = rowSums(race_df[,5:10], na.rm = TRUE)) %>%
+  rename("total" = P1_001N,
+         "totalOneRace" = P1_002N,
+         "white" = P1_003N,
+         "black" = P1_004N,
+         "nativeA" = P1_005N,
+         "asian" = P1_006N,
+         "pacificI" = P1_007N,
+         "other" = P1_008N,
+         "twoOrMore" = P1_009N
+        ) %>%
+  mutate("percentNotWhite" =       
+           ifelse(is.na(nonWhite/total),0,nonWhite/total))%>%
+  #select(GEO_ID,total,nonWhite,white,black,nativeA,asian,pacificI,other,twoOrMore,percentNotWhite)%>%
+  select(GEO_ID, percentNotWhite)%>%
+  arrange(GEO_ID) #idk this might help arcGIS
+```
+
+```{r}
+write.csv(race_df,"raceNonWhite3.csv")
+```
+
+# Loading data into ArcGIS
+
+Made sure to document this for my own sake
+
+## Map setup
+
+1.  Add shapefile -- *Make sure it is the corresponding type (census block, block group, tract)*
+
+2.  Add csv (You need to add it to your database first. Catalog-\> databases-\> project name-\> right click, import)
+
+3.  Create calculated field for GEO_ID
+
+    1.  Open attribute table
+
+    2.  Create calculated field
+
+    3.  Use this equation: `!GEO_ID![9:]` *-- indexes column GEO_ID from the 9th character*
+
+        *It is tempting to edit the GEO_ID field in R. I tried and wasted a lot of time because when the CSV is uploaded into ArcGIS, the column was read in as a numeric and it needs to be text to join to the shapefile. I wish there was an easy work around for this.*
+
+4.  Join the csv to the shapefile on the new calculated field -- *I would click the Validate Join button before running the join. If the join is unsuccessful, the validate function will tell you why. It also takes a long time on this data set.*
+
+5.  Add city boundaries shapefile. -- *I found Minneapolis in ArcGIS online*
+
+6.  Clip map to city features
+
+    1.  Analysis-\> tools-\> clip
+    2.  Input features: .shp with data
+    3.  Clip features: city boundaries *You should now have a new map object with only the blocks within the city*
+
+7.  Add shapefile with library location data
+
+8.  Use Near function to create column with distance
+
+    1.  Analysis-\> tools-\> near
+    2.  Input features: clipped shp
+    3.  Near features: libraries *Check the attribute table to make sure the columns were added*
+
+9.  Export data
+
+    1.  clipped shp, right click-\> data-\> export table-\> click on output table and add .csv at the end
+
+## Exporting the map
+
+1.  Share-\> export map
+2.  Pick the preferred file format
+
+# Map Results
+
+|                                                            |                                                               |
+|------------------------------------------------------------|:-------------------------------------------------------------:|
+| ![](%25notWhiteEdited.jpg){fig-align="center" width="300"} | ![](library_radii_edited.jpg){fig-align="center" width="300"} |
+
+The colors were chosen to show contrast between the different groups.
+
+The distances in the *Distance from a library* map were chosen due to walk-ability. Anything beyond half a mile is outside a reasonably easy walk.
+
+I chose to make two maps to help visualize the distribution of race and practicality of visiting the library based on distance. I think the distance map makes it easier to identify spots that lack accessibility.
+
+# Analysis/Linear Regression
+
+First, I do an inner join between the raw data from the census bureau and the output file from ArcGIS to keep only the rows that are located in Minneapolis. The model for the regression analysis was run in STATA, it was initially done in this document for a quick check.
+
+```{r}
+# csv from the US census
+original_df = read.csv("DECENNIALPL2020.P1_2022-11-29T164332\\DECENNIALPL2020.P1-Data.csv",header=T)[-1,]
+# csv output from ArcGIS
+race_dist = read.csv("raceWithDistanceGEODESIC.csv")
+
+
+# creating a new df so the csvs don't need to be read in everytime I run the code
+newRace_df <- merge(original_df, race_dist, by.x = "GEO_ID", by.y = "raceNonWhite3_GEO_ID") %>%
+  rename("total" = P1_001N,
+         "totalOneRace" = P1_002N,
+         "white" = P1_003N,
+         "black" = P1_004N,
+         "nativeAmerican" = P1_005N,
+         "asian" = P1_006N,
+         "pacificIslander" = P1_007N,
+         "other" = P1_008N,
+         "twoOrMore" = P1_009N,
+         "distance" = NEAR_DIST
+        )%>%
+  select(GEO_ID,total,white,black,nativeAmerican,asian,pacificIslander,other,twoOrMore, distance) %>%
+  mutate(distance = distance *0.000621)
+
+# change from character to numeric
+newRace_df[ , 2:9] <- apply(newRace_df[ , 2:9], 2,
+                    function(x) as.numeric(as.character(x)))
+
+newRace_df <- newRace_df %>%
+  mutate("nonWhite" = rowSums(newRace_df[,4:9], na.rm = TRUE)) %>%
+  mutate("percentNotWhite" =       
+           ifelse(is.na(nonWhite/total),0,nonWhite/total))
+
+race_dist_lm = lm(distance~percentNotWhite + total, data = newRace_df)
+summary(race_dist_lm)
+
+summary(newRace_df)
+```
+
+#### Graph Creation
+
+```{r}
+ggplot(newRace_df, aes(x=percentNotWhite,y=distance, color = percentNotWhite)) +
+  geom_point(alpha = .4, show.legend = FALSE) +
+  geom_smooth(method = lm, color = "red", fill = "transparent") +
+  labs(title = "Percent POC and Distance (miles)",
+       x = "Percent POC",
+      y = "Miles") +
+  theme_minimal() +
+  scale_color_gradient(low = "yellow", high = "red") +
+  theme(plot.title = element_text(hjust = .5, family = "mono"),
+        axis.title = element_text(family = "mono"),
+        axis.text = element_text(family = "mono"))
+```
+
+Summary statistics and totals
+
+```{r}
+totals_df <- newRace_df %>%
+  select(total:twoOrMore)%>%
+  pivot_longer(cols = everything(), names_to = "Category", values_to = "val") %>%
+  group_by(Category) %>%
+  summarise(Total = sum(val)) %>%
+  arrange(Total)
+totals_df
+```
