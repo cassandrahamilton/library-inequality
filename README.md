@@ -3,8 +3,8 @@ Libraries are recognized as an important part of a city. In addition to the educ
 
 ## Associated Papers and Documents
 [Regression Analysis](https://github.com/cassandrahamilton/library-inequality/blob/0db16c73862edcfe50c31c24adc87d3bd98e2ec8/Regression%20Analysis%20Paper.docx) <br/>
-Economic Inequality <br/>
-R Rendered Document
+[Economic Inequality](https://github.com/cassandrahamilton/library-inequality/blob/70cbf8c92b869afd39095c1d0513140ec1e21523/Economic%20Inequality%20Paper.docx) <br/>
+[R Rendered Document](https://github.com/cassandrahamilton/library-inequality/blob/70cbf8c92b869afd39095c1d0513140ec1e21523/Library%20Research.html)
 
 ## Methodology
 As a case study of library accessibility, I decided to study the distribution of public libraries in Minneapolis in comparison with racial demographics throughout the city. Population data was taken from the 2020 US census at the block level – the smallest division publicly available with 5964 blocks in the city of Minneapolis. People were categorized as either white or not white where multi racial individuals were part of the non-white group. All data cleaning and linear regression was done in R. The population data was plotted and analyzed with the library locations in ArcGIS using central place theory. Central place theory is the assumption that a customer will patronize the closest central place. This analysis used a straight-line approach which does not account for landmark barriers (rivers, lakes, highways, etc). A more nuanced approach would calculate the travel distance by road. Since this study is about inequality, access via public transit or walking could also be considered in future analysis.
