@@ -2,7 +2,7 @@
 Libraries are recognized as an important part of a city. In addition to the educational resources they provide, libraries generate social capital. This study investigates if the city of Minneapolis, MN provides equitable access to libraries based on distance from a library and the racial makeup of each census block. Distance is measured as a straight line from centroids of each census block to the nearest library. Using Minneapolis’s 5964 census blocks, we find no signs of discrimination based upon not being white. Libraries tend to be located closer to areas with more people of color and higher population density.
 
 ## Associated Papers and Documents
-[Regression Analysis](Regression Analysis Paper.docx) <br/>
+[Regression Analysis](https://github.com/cassandrahamilton/library-inequality/blob/0db16c73862edcfe50c31c24adc87d3bd98e2ec8/Regression%20Analysis%20Paper.docx) <br/>
 Economic Inequality <br/>
 R Rendered Document
 
